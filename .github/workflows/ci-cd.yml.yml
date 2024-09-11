@@ -19,7 +19,6 @@ jobs:
       - name: Set up Docker
         uses: docker/setup-buildx-action@v1
 
-      # Install Docker Compose
       - name: Install Docker Compose
         run: |
           sudo apt-get update
@@ -34,8 +33,20 @@ jobs:
       - name: Run Docker Compose
         run: docker-compose up -d
 
+      - name: List running Docker containers
+        run: docker ps
+
+      # Add a sleep to wait for the containers to initialize
+      - name: Wait for WordPress to be ready
+        run: sleep 30
+
+      # Check if WordPress home page is responding
       - name: Verify WordPress Home Page Loads
         run: curl --fail http://localhost:8080 || exit 1
+
+      # Check WordPress logs if needed
+      - name: Print WordPress container logs
+        run: docker logs $(docker ps -q --filter "ancestor=wordpress:latest")
 
       - name: Clean up Docker resources
         run: docker system prune -f
