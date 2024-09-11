@@ -1,0 +1,36 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build WordPress Docker Image
+        run: docker build -t wordpress-app -f Dockerfile .
+
+      - name: Build MySQL Docker Image
+        run: docker build -t mysql-db -f Dockerfile.mysql .
+
+      - name: Run Docker Compose
+        run: docker-compose up -d
+
+      - name: Verify WordPress Home Page Loads
+        run: curl --fail http://localhost:8080 || exit 1
+
+      - name: Clean up Docker resources
+        run: docker system prune -f
+
