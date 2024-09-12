@@ -16,13 +16,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
       - name: Install Docker Compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose
+        run: sudo apt-get install docker-compose -y
 
       - name: Build WordPress Docker Image
         run: docker build -t wordpress-app -f Dockerfile .
@@ -36,17 +34,24 @@ jobs:
       - name: List running Docker containers
         run: docker ps
 
-      # Add a sleep to wait for the containers to initialize
       - name: Wait for WordPress to be ready
-        run: sleep 30
+        run: |
+          for i in {1..10}; do
+            if curl --fail http://localhost:8080; then
+              echo "WordPress is up!"
+              exit 0
+            fi
+            echo "Waiting for WordPress to be up..."
+            sleep 10
+          done
+          echo "WordPress failed to start in time."
+          exit 1
 
-      # Check if WordPress home page is responding
       - name: Verify WordPress Home Page Loads
         run: curl --fail http://localhost:8080 || exit 1
 
-      # Check WordPress logs if needed
-      - name: Print WordPress container logs
-        run: docker logs $(docker ps -q --filter "ancestor=wordpress:latest")
+      - name: Print Docker Compose logs (All Containers)
+        run: docker-compose logs
 
       - name: Clean up Docker resources
         run: docker system prune -f
